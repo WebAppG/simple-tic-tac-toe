@@ -1,0 +1,15 @@
+
+## add .git for visual cue in vscode
+.git
+
+## manually add the following line
+## for vscode settings can be different in different computers
+.vscode
+
+### for temp files created by MacOS
+.DS_Store
+
+### local program lock files
+.~lock.*
+~$*.xlsx
+*.laccdb

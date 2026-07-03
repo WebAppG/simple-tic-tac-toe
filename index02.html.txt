@@ -1,0 +1,1008 @@
+
+
+----------------------------
+
+prompt (deepseek):
+
+please create a one-page webapp board game called "Simple Tic-Tac-Toe".  it begins with a overlay settings screen where the user can choose one player mode or two players mode.  For the one player mode, the other player is the computer.  There is also a toggle for choosing in one player mode if the player should move first or the computer should move first.  after each game, an overlay screen with the result will pop up and notify who won, and then the game should go back to the beginning settings screen.
+
+
+----------------------------
+
+response:
+
+I've created a complete one-page webapp for "Simple Tic-Tac-Toe" with a settings overlay, one/two-player modes, and computer AI.
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Tic-Tac-Toe</title>
+    <style>
+        /* ── reset & base ── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 30% 20%, #1a1a2e, #16213e, #0f0f1f);
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* ── main container ── */
+        .app {
+            position: relative;
+            width: 100%;
+            max-width: 520px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 48px;
+            padding: 32px 28px 40px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            transition: opacity 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        /* ── overlays ── */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 15, 31, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 48px;
+            padding: 36px 28px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: scale(0.96);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* ── settings overlay ── */
+        .settings-title {
+            font-size: 2.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 4px 20px rgba(255, 210, 0, 0.15);
+        }
+        .settings-sub {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .settings-group {
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 24px;
+        }
+        .settings-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 60px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .mode-toggle button {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.3px;
+        }
+        .mode-toggle button.active {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+            box-shadow: 0 8px 24px rgba(255, 210, 0, 0.25);
+        }
+        .mode-toggle button:not(.active):hover {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .first-move-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 40px;
+            padding: 6px 14px 6px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin-top: 4px;
+        }
+        .first-move-row span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .first-move-row .toggle-labels {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .first-move-row .toggle-labels .label-off {
+            color: rgba(255, 255, 255, 0.35);
+        }
+        .first-move-row .toggle-labels .label-on {
+            color: #ffd200;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+        }
+        .toggle-switch .knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .toggle-switch.active .knob {
+            transform: translateX(22px);
+        }
+
+        .btn-start {
+            width: 100%;
+            max-width: 340px;
+            padding: 16px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+            transition: all 0.25s ease;
+            letter-spacing: 0.5px;
+            box-shadow: 0 8px 30px rgba(255, 210, 0, 0.2);
+            margin-top: 8px;
+        }
+        .btn-start:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 12px 40px rgba(255, 210, 0, 0.35);
+        }
+        .btn-start:active {
+            transform: scale(0.97);
+        }
+
+        /* ── game board ── */
+        .game-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 4px 0;
+        }
+        .game-container.active {
+            display: flex;
+        }
+
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 4px;
+        }
+        .turn-indicator {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .turn-indicator .turn-symbol {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.08);
+            transition: background 0.3s;
+        }
+        .turn-indicator .turn-symbol.x {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.15);
+        }
+        .turn-indicator .turn-symbol.o {
+            color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.15);
+        }
+
+        .btn-settings {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.3px;
+        }
+        .btn-settings:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            aspect-ratio: 1 / 1;
+            user-select: none;
+            color: white;
+            position: relative;
+        }
+        .cell:hover:not(.taken):not(.game-over) {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .cell.taken {
+            cursor: default;
+        }
+        .cell.game-over {
+            cursor: default;
+        }
+        .cell .x-mark {
+            color: #ff6b6b;
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.25);
+            animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .cell .o-mark {
+            color: #4ecdc4;
+            text-shadow: 0 0 30px rgba(78, 205, 196, 0.25);
+            animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .cell.win-cell {
+            background: rgba(255, 215, 0, 0.12) !important;
+            border-color: rgba(255, 215, 0, 0.3) !important;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.08);
+        }
+        .cell.win-cell .x-mark {
+            color: #ffd93d;
+            text-shadow: 0 0 40px rgba(255, 217, 61, 0.4);
+        }
+        .cell.win-cell .o-mark {
+            color: #ffd93d;
+            text-shadow: 0 0 40px rgba(255, 217, 61, 0.4);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.2) rotate(-15deg);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* ── result overlay ── */
+        .result-title {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+        .result-title.win {
+            color: #ffd93d;
+            text-shadow: 0 0 40px rgba(255, 217, 61, 0.2);
+        }
+        .result-title.draw {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .result-title.lose {
+            color: #ff6b6b;
+            text-shadow: 0 0 40px rgba(255, 107, 107, 0.15);
+        }
+
+        .result-sub {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1rem;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .result-symbol {
+            font-size: 4rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .btn-play-again {
+            width: 100%;
+            max-width: 280px;
+            padding: 16px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            transition: all 0.25s ease;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            letter-spacing: 0.3px;
+        }
+        .btn-play-again:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        .btn-play-again:active {
+            transform: scale(0.97);
+        }
+
+        /* ── responsive ── */
+        @media (max-width: 480px) {
+            .app {
+                padding: 24px 16px 32px;
+                border-radius: 32px;
+            }
+            .overlay {
+                border-radius: 32px;
+                padding: 28px 16px;
+            }
+            .settings-title {
+                font-size: 2.2rem;
+            }
+            .cell {
+                font-size: 2.8rem;
+                border-radius: 14px;
+            }
+            .board {
+                gap: 8px;
+            }
+            .result-title {
+                font-size: 2.2rem;
+            }
+            .first-move-row {
+                padding: 4px 10px 4px 16px;
+            }
+            .first-move-row span {
+                font-size: 0.85rem;
+            }
+            .toggle-switch {
+                width: 44px;
+                height: 26px;
+            }
+            .toggle-switch .knob {
+                width: 20px;
+                height: 20px;
+            }
+            .toggle-switch.active .knob {
+                transform: translateX(18px);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .cell {
+                font-size: 2.2rem;
+            }
+            .settings-title {
+                font-size: 1.8rem;
+            }
+            .mode-toggle button {
+                font-size: 0.85rem;
+                padding: 10px 0;
+            }
+        }
+
+        /* ── utility ── */
+        .hidden {
+            display: none !important;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .gap-4 {
+            gap: 4px;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app" id="app">
+
+        <!-- ─── SETTINGS OVERLAY ─── -->
+        <div class="overlay active" id="settingsOverlay">
+            <div class="settings-title">♢ Tic-Tac-Toe</div>
+            <div class="settings-sub">choose your game</div>
+
+            <div class="settings-group">
+                <span class="settings-label">Mode</span>
+                <div class="mode-toggle" id="modeToggle">
+                    <button class="active" data-mode="onePlayer">1 Player</button>
+                    <button data-mode="twoPlayers">2 Players</button>
+                </div>
+            </div>
+
+            <div class="settings-group" id="firstMoveGroup">
+                <span class="settings-label">Who moves first?</span>
+                <div class="first-move-row">
+                    <span>You</span>
+                    <div class="toggle-labels">
+                        <span class="label-off" id="firstLabelOff">○</span>
+                        <div class="toggle-switch active" id="firstToggle">
+                            <div class="knob"></div>
+                        </div>
+                        <span class="label-on" id="firstLabelOn">●</span>
+                    </div>
+                    <span>Computer</span>
+                </div>
+            </div>
+
+            <button class="btn-start" id="btnStart">Start Game</button>
+        </div>
+
+        <!-- ─── GAME ─── -->
+        <div class="game-container" id="gameContainer">
+            <div class="game-header">
+                <div class="turn-indicator" id="turnIndicator">
+                    <span>Turn</span>
+                    <span class="turn-symbol x" id="turnSymbol">X</span>
+                </div>
+                <button class="btn-settings" id="btnSettings">⚙ Settings</button>
+            </div>
+
+            <div class="board" id="board">
+                <!-- 9 cells built by JS -->
+            </div>
+        </div>
+
+        <!-- ─── RESULT OVERLAY ─── -->
+        <div class="overlay" id="resultOverlay">
+            <span class="result-symbol" id="resultSymbol">🏆</span>
+            <div class="result-title" id="resultTitle">You Win!</div>
+            <div class="result-sub" id="resultSub">Great job!</div>
+            <button class="btn-play-again" id="btnPlayAgain">↻ Play Again</button>
+        </div>
+
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── DOM refs ───
+            const settingsOverlay = document.getElementById('settingsOverlay');
+            const resultOverlay = document.getElementById('resultOverlay');
+            const gameContainer = document.getElementById('gameContainer');
+            const boardEl = document.getElementById('board');
+            const turnIndicator = document.getElementById('turnIndicator');
+            const turnSymbol = document.getElementById('turnSymbol');
+            const btnStart = document.getElementById('btnStart');
+            const btnSettings = document.getElementById('btnSettings');
+            const btnPlayAgain = document.getElementById('btnPlayAgain');
+            const modeToggle = document.getElementById('modeToggle');
+            const firstToggle = document.getElementById('firstToggle');
+            const firstMoveGroup = document.getElementById('firstMoveGroup');
+            const firstLabelOff = document.getElementById('firstLabelOff');
+            const firstLabelOn = document.getElementById('firstLabelOn');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultSub = document.getElementById('resultSub');
+            const resultSymbol = document.getElementById('resultSymbol');
+
+            // ─── state ───
+            let mode = 'onePlayer'; // 'onePlayer' | 'twoPlayers'
+            let firstMove = 'player'; // 'player' | 'computer'  (only for onePlayer)
+            let board = Array(9).fill(null);
+            let currentPlayer = 'X'; // 'X' always goes first
+            let gameActive = false;
+            let gameOver = false;
+            let isComputerTurn = false;
+            let winCells = [];
+
+            // ─── constants ───
+            const HUMAN = 'X';
+            const COMPUTER = 'O';
+
+            // ─── render board ───
+            function renderBoard() {
+                boardEl.innerHTML = '';
+                for (let i = 0; i < 9; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.index = i;
+                    const value = board[i];
+                    if (value === 'X') {
+                        cell.innerHTML = '<span class="x-mark">✕</span>';
+                        cell.classList.add('taken');
+                    } else if (value === 'O') {
+                        cell.innerHTML = '<span class="o-mark">◯</span>';
+                        cell.classList.add('taken');
+                    }
+                    if (gameOver) cell.classList.add('game-over');
+                    if (winCells.includes(i)) cell.classList.add('win-cell');
+                    cell.addEventListener('click', () => handleCellClick(i));
+                    boardEl.appendChild(cell);
+                }
+                updateTurnIndicator();
+            }
+
+            function updateTurnIndicator() {
+                if (gameOver) {
+                    turnIndicator.innerHTML = `<span>Game Over</span>`;
+                    return;
+                }
+                const symbol = currentPlayer === 'X' ? 'X' : 'O';
+                const cls = symbol === 'X' ? 'x' : 'o';
+                turnIndicator.innerHTML = `
+                    <span>Turn</span>
+                    <span class="turn-symbol ${cls}">${symbol}</span>
+                `;
+                turnSymbol.className = `turn-symbol ${cls}`;
+                turnSymbol.textContent = symbol;
+            }
+
+            // ─── win detection ───
+            function checkWinner() {
+                const lines = [
+                    [0, 1, 2],
+                    [3, 4, 5],
+                    [6, 7, 8],
+                    [0, 3, 6],
+                    [1, 4, 7],
+                    [2, 5, 8],
+                    [0, 4, 8],
+                    [2, 4, 6]
+                ];
+                for (const line of lines) {
+                    const [a, b, c] = line;
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        return { winner: board[a], cells: line };
+                    }
+                }
+                if (board.every(v => v !== null)) {
+                    return { winner: 'draw', cells: [] };
+                }
+                return null;
+            }
+
+            function isBoardFull() {
+                return board.every(v => v !== null);
+            }
+
+            function getEmptyCells() {
+                return board.map((v, i) => v === null ? i : null).filter(v => v !== null);
+            }
+
+            // ─── minimax AI ───
+            function minimax(b, depth, isMaximizing) {
+                const result = checkWinnerBoard(b);
+                if (result === 'X') return 10 - depth;
+                if (result === 'O') return depth - 10;
+                if (result === 'draw') return 0;
+
+                if (isMaximizing) {
+                    let best = -Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (b[i] === null) {
+                            b[i] = 'X';
+                            best = Math.max(best, minimax(b, depth + 1, false));
+                            b[i] = null;
+                        }
+                    }
+                    return best;
+                } else {
+                    let best = Infinity;
+                    for (let i = 0; i < 9; i++) {
+                        if (b[i] === null) {
+                            b[i] = 'O';
+                            best = Math.min(best, minimax(b, depth + 1, true));
+                            b[i] = null;
+                        }
+                    }
+                    return best;
+                }
+            }
+
+            function checkWinnerBoard(b) {
+                const lines = [
+                    [0, 1, 2],
+                    [3, 4, 5],
+                    [6, 7, 8],
+                    [0, 3, 6],
+                    [1, 4, 7],
+                    [2, 5, 8],
+                    [0, 4, 8],
+                    [2, 4, 6]
+                ];
+                for (const line of lines) {
+                    const [a, bC, c] = line;
+                    if (b[a] && b[a] === b[bC] && b[a] === b[c]) {
+                        return b[a];
+                    }
+                }
+                if (b.every(v => v !== null)) return 'draw';
+                return null;
+            }
+
+            function getComputerMove() {
+                const empty = getEmptyCells();
+                if (empty.length === 0) return null;
+
+                // If computer is O (minimizer)
+                let bestScore = Infinity;
+                let bestMove = empty[0];
+
+                for (const i of empty) {
+                    board[i] = COMPUTER;
+                    const score = minimax(board, 0, true);
+                    board[i] = null;
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
+                }
+                return bestMove;
+            }
+
+            // ─── game logic ───
+            function handleCellClick(index) {
+                if (!gameActive || gameOver) return;
+                if (isComputerTurn) return;
+                if (board[index] !== null) return;
+
+                // Human move
+                makeMove(index, HUMAN);
+
+                // Check win after human move
+                if (gameOver) return;
+
+                // If one player mode and game still active, trigger computer turn
+                if (mode === 'onePlayer' && gameActive && !gameOver) {
+                    isComputerTurn = true;
+                    renderBoard();
+                    // delay computer move for a better feel
+                    setTimeout(() => {
+                        if (gameActive && !gameOver) {
+                            computerMove();
+                        }
+                        isComputerTurn = false;
+                    }, 280);
+                }
+            }
+
+            function makeMove(index, player) {
+                if (board[index] !== null) return false;
+                board[index] = player;
+                currentPlayer = (player === 'X' ? 'O' : 'X');
+                renderBoard();
+
+                const result = checkWinner();
+                if (result) {
+                    gameOver = true;
+                    gameActive = false;
+                    if (result.winner !== 'draw') {
+                        winCells = result.cells;
+                        renderBoard();
+                    }
+                    showResult(result.winner);
+                    return true;
+                }
+                return true;
+            }
+
+            function computerMove() {
+                if (!gameActive || gameOver) return;
+                if (isBoardFull()) return;
+
+                const move = getComputerMove();
+                if (move === null) return;
+
+                board[move] = COMPUTER;
+                currentPlayer = HUMAN;
+                renderBoard();
+
+                const result = checkWinner();
+                if (result) {
+                    gameOver = true;
+                    gameActive = false;
+                    if (result.winner !== 'draw') {
+                        winCells = result.cells;
+                        renderBoard();
+                    }
+                    showResult(result.winner);
+                }
+            }
+
+            function showResult(winner) {
+                const isOnePlayer = mode === 'onePlayer';
+                let title, sub, symbol;
+
+                if (winner === 'draw') {
+                    title = "It's a Draw!";
+                    sub = "Well played!";
+                    symbol = '🤝';
+                    resultTitle.className = 'result-title draw';
+                } else if (winner === 'X') {
+                    if (isOnePlayer) {
+                        title = '🎉 You Win!';
+                        sub = 'Brilliant! You beat the computer!';
+                        symbol = '🏆';
+                        resultTitle.className = 'result-title win';
+                    } else {
+                        title = '🎉 Player 1 Wins!';
+                        sub = 'Player 1 (✕) takes the victory!';
+                        symbol = '🏆';
+                        resultTitle.className = 'result-title win';
+                    }
+                } else { // winner === 'O'
+                    if (isOnePlayer) {
+                        title = '💻 Computer Wins!';
+                        sub = 'Better luck next time!';
+                        symbol = '🤖';
+                        resultTitle.className = 'result-title lose';
+                    } else {
+                        title = '🎉 Player 2 Wins!';
+                        sub = 'Player 2 (◯) takes the victory!';
+                        symbol = '🏆';
+                        resultTitle.className = 'result-title win';
+                    }
+                }
+
+                resultTitle.textContent = title;
+                resultSub.textContent = sub;
+                resultSymbol.textContent = symbol;
+
+                // show result overlay after a short delay
+                setTimeout(() => {
+                    resultOverlay.classList.add('active');
+                }, 400);
+            }
+
+            // ─── start game ───
+            function startGame() {
+                // reset state
+                board = Array(9).fill(null);
+                currentPlayer = 'X';
+                gameActive = true;
+                gameOver = false;
+                winCells = [];
+                isComputerTurn = false;
+
+                // hide overlays
+                settingsOverlay.classList.remove('active');
+                resultOverlay.classList.remove('active');
+                gameContainer.classList.add('active');
+
+                renderBoard();
+
+                // Determine first move
+                if (mode === 'onePlayer') {
+                    if (firstMove === 'computer') {
+                        // Computer (O) goes first
+                        isComputerTurn = true;
+                        setTimeout(() => {
+                            if (gameActive && !gameOver) {
+                                computerMove();
+                            }
+                            isComputerTurn = false;
+                        }, 350);
+                    } else {
+                        // Player (X) goes first
+                        isComputerTurn = false;
+                    }
+                } else {
+                    // Two players: X goes first
+                    isComputerTurn = false;
+                }
+                updateTurnIndicator();
+            }
+
+            // ─── reset to settings ───
+            function goToSettings() {
+                gameContainer.classList.remove('active');
+                resultOverlay.classList.remove('active');
+                settingsOverlay.classList.add('active');
+                gameActive = false;
+                gameOver = false;
+                isComputerTurn = false;
+                board = Array(9).fill(null);
+                winCells = [];
+                renderBoard();
+            }
+
+            // ─── UI event handlers ───
+
+            // Mode toggle
+            modeToggle.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const newMode = btn.dataset.mode;
+                if (newMode === mode) return;
+                mode = newMode;
+                modeToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // show/hide first move toggle
+                if (mode === 'onePlayer') {
+                    firstMoveGroup.style.display = 'block';
+                } else {
+                    firstMoveGroup.style.display = 'none';
+                }
+            });
+
+            // First move toggle
+            firstToggle.addEventListener('click', () => {
+                const isActive = firstToggle.classList.contains('active');
+                if (isActive) {
+                    firstToggle.classList.remove('active');
+                    firstMove = 'computer';
+                    firstLabelOff.style.color = '#ffd200';
+                    firstLabelOn.style.color = 'rgba(255,255,255,0.35)';
+                } else {
+                    firstToggle.classList.add('active');
+                    firstMove = 'player';
+                    firstLabelOff.style.color = 'rgba(255,255,255,0.35)';
+                    firstLabelOn.style.color = '#ffd200';
+                }
+            });
+
+            // Start button
+            btnStart.addEventListener('click', startGame);
+
+            // Settings button (during game)
+            btnSettings.addEventListener('click', goToSettings);
+
+            // Play again button (after result)
+            btnPlayAgain.addEventListener('click', goToSettings);
+
+            // ─── init ───
+            function init() {
+                // Set default mode
+                modeToggle.querySelector('[data-mode="onePlayer"]').classList.add('active');
+                modeToggle.querySelector('[data-mode="twoPlayers"]').classList.remove('active');
+                mode = 'onePlayer';
+                firstMoveGroup.style.display = 'block';
+                firstToggle.classList.add('active');
+                firstMove = 'player';
+                firstLabelOff.style.color = 'rgba(255,255,255,0.35)';
+                firstLabelOn.style.color = '#ffd200';
+
+                board = Array(9).fill(null);
+                renderBoard();
+                settingsOverlay.classList.add('active');
+                gameContainer.classList.remove('active');
+                resultOverlay.classList.remove('active');
+                gameActive = false;
+                gameOver = false;
+                winCells = [];
+            }
+
+            init();
+
+        })();
+    </script>
+
+</body>
+</html>
+```
+### Gameplay Overview
+
+Here's how the game works and what you can expect:
+
+- **Setup & Modes**: The game starts with a settings overlay. You can choose **1 Player** (vs computer) or **2 Players** (local multiplayer). For one-player mode, toggle who moves first — you or the computer.
+- **Game Flow**: Click a cell to place your mark (X). The computer (O) will respond automatically in one-player mode. In two-player mode, players take turns. The turn indicator at the top shows whose turn it is.
+- **Result & Reset**: After a win or draw, a result overlay appears with a clear message. Click **"Play Again"** to return to the settings screen, where you can change mode or first-move preference before starting a new game.
+
+The computer uses a minimax algorithm to make optimal moves, providing a challenging experience in one-player mode.
+
+---
+
+**Optimization Tip:** You can adjust the computer's difficulty by modifying the `minimax` function's depth scoring (lines ~240-260) or adding randomness to move selection.
+
+----------------------------
+

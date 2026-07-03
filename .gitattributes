@@ -1,0 +1,18 @@
+# Auto detect text files and perform LF normalization
+* text=auto eol=lf
+
+# Ensures shell scripts always use LF line endings, regardless of the operating system used for checkout.
+*.sh text eol=lf
+*.py text eol=lf
+
+# Ensures Windows batch scripts always use CRLF line endings to run correctly on Windows systems.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Mark common image formats as binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.png binary
+
+*.md diff=markdown
